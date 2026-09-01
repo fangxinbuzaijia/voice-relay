@@ -1,0 +1,41 @@
+# Implementation Plan
+
+- [x] 1. Establish repository and shared contracts
+  - Create workspaces, strict TypeScript settings, protocol schemas, and environment examples.
+  - _Requirements: 2, 3, 7_
+- [x] 2. Implement authentication and persistence
+  - Add SQLite schema, password/TOTP handling, opaque sessions, CLI account creation/reset, and device APIs.
+  - _Requirements: 1, 2, 9_
+- [x] 3. Implement the real-time relay
+  - Add authenticated WebSockets, presence, online-only forwarding, acknowledgements, timeouts, and log redaction.
+  - _Requirements: 3, 4, 7_
+- [x] 4. Implement the mobile PWA
+  - Add login, device selection, sealed-box encryption, TOFU, send status, local history, and PWA packaging.
+  - _Requirements: 2, 3, 7, 8, 9_
+- [x] 5. Implement the Windows client
+  - Add server settings, DPAPI state, registration, WebSocket reconnect, sealed-box decryption, duplicate protection, tray controls, and clipboard paste.
+  - _Requirements: 3, 5, 6_
+- [x] 6. Package, document, and verify
+  - Add Docker image/Compose, installer script, CI, deployment contract, backups, automated tests, and browser/Windows validation evidence.
+  - _Requirements: 1-10_
+- [x] 7. Add zero-configuration Docker bootstrap
+  - Persist the generated master key, create an eight-character bootstrap account, expose the initial credentials file/log, and fail safely for unrecoverable existing data.
+  - _Requirements: 11-13, 16_
+- [x] 8. Make account security self-service and TOTP optional
+  - Add schema migration, account APIs, session revocation rules, credentials UI, QR-based TOTP lifecycle, and optional Windows/browser login code.
+  - _Requirements: 1, 14-15_
+- [x] 9. Replace account recovery and deployment instructions
+  - Add random/manual reset modes, TOTP recovery choices, bind-mounted data backups, single-command documentation, and Docker bootstrap CI coverage.
+  - _Requirements: 10-17_
+- [x] 10. Package the Windows notification-area executable
+  - Add the shared brand icon, single-file native dependency bundling, close-to-tray behavior, safe startup toggling, installer icon, tests, and a verified x64 EXE artifact.
+  - _Requirements: 18-20_
+- [x] 11. Allow browser WebAssembly under the production CSP
+  - Permit only `wasm-unsafe-eval`, retain the ban on general `unsafe-eval`, force a PWA cache revision, and cover the policy with a regression test.
+  - _Requirements: 21_
+- [x] 12. Correct the Windows `SendInput` ABI
+  - Declare every native `INPUT` union member, assert the x64 structure is 40 bytes, and republish the Windows executable.
+  - _Requirements: 22_
+- [x] 13. Refresh the PWA as a personal utility
+  - Replace the industrial landing-page treatment with a light organic palette, plain Chinese copy, softer controls, and responsive login, send, device, history, and account-security surfaces.
+  - _Requirements: 23_

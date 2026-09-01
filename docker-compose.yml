@@ -1,0 +1,22 @@
+services:
+  relay:
+    image: ghcr.io/fangxinbuzaijia/voice-relay:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DB_PATH: /data/voice-relay.db
+      WEB_ROOT: /app/apps/web/dist
+      MASTER_KEY: "${MASTER_KEY:-}"
+      LEGACY_DATA_DIR: /legacy-data
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-3100}:3000"
+    volumes:
+      - ./data:/data
+      - relay-data:/legacy-data:ro
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  relay-data:

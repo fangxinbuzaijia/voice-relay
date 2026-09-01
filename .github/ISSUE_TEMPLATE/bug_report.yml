@@ -1,0 +1,37 @@
+name: Bug report
+description: Report reproducible behavior that is not working as documented
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include passwords, tokens, TOTP secrets, private keys, databases, or private deployment addresses.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: v1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options: [Mobile PWA, Relay server, Windows client, Docker deployment]
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Include reproduction steps, expected behavior, and sanitized logs.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: Browser/Windows/Linux version, CPU architecture, reverse proxy
+    validations:
+      required: true
+

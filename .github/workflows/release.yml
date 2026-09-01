@@ -1,0 +1,139 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  container:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Normalize image name
+        id: image
+        shell: bash
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=Voice Relay
+            org.opencontainers.image.description=Self-hosted mobile voice text relay for Windows
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.licenses=MIT
+
+      - name: Build and publish multi-architecture image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=voice-relay
+          cache-to: type=gha,mode=max,scope=voice-relay
+          provenance: true
+          sbom: true
+
+  windows:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build and test Windows client
+        shell: pwsh
+        run: |
+          dotnet restore apps/windows/VoiceRelay.Windows/VoiceRelay.Windows.csproj
+          dotnet test apps/windows/VoiceRelay.Windows.Tests/VoiceRelay.Windows.Tests.csproj -c Release
+
+      - name: Publish portable executable
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          dotnet publish apps/windows/VoiceRelay.Windows/VoiceRelay.Windows.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:Version=$version -p:FileVersion="$version.0" `
+            -o artifacts/windows
+          $files = @(Get-ChildItem -LiteralPath artifacts/windows -File)
+          if ($files.Count -ne 1 -or $files[0].Name -ne 'VoiceRelay.exe') {
+            throw "Expected exactly one VoiceRelay.exe; found: $($files.Name -join ', ')"
+          }
+          New-Item -ItemType Directory -Force artifacts/release | Out-Null
+          Compress-Archive -LiteralPath artifacts/windows/VoiceRelay.exe `
+            -DestinationPath "artifacts/release/VoiceRelay-$version-win-x64-portable.zip"
+
+      - name: Build per-user installer
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          choco install innosetup --no-progress -y
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          & $iscc "/DMyAppVersion=$version" 'installer\VoiceRelay.iss'
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with exit code $LASTEXITCODE" }
+          Copy-Item artifacts/installer/*.exe artifacts/release/
+
+      - name: Generate checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem artifacts/release -File | Sort-Object Name | ForEach-Object {
+            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant()
+            "$hash *$($_.Name)"
+          } | Set-Content -Encoding ascii artifacts/release/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-files
+          path: artifacts/release/*
+          if-no-files-found: error
+
+  github-release:
+    needs: [container, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: release-files
+          path: release-files
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release-files/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Voice Relay $GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag
+

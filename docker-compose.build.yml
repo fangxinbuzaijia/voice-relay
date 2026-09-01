@@ -1,0 +1,6 @@
+services:
+  relay:
+    image: voice-relay:local
+    build:
+      context: .
+
