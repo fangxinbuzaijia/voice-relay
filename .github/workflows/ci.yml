@@ -28,7 +28,10 @@ jobs:
             if curl --fail --silent http://127.0.0.1:3100/health/ready; then break; fi
             sleep 2
           done
-          curl --fail --silent http://127.0.0.1:3100/health/ready
+          if ! curl --fail --silent http://127.0.0.1:3100/health/ready; then
+            docker compose -f docker-compose.yml -f docker-compose.build.yml logs --no-color
+            exit 1
+          fi
           docker compose -f docker-compose.yml -f docker-compose.build.yml exec -T relay test -f /data/master.key
           docker compose -f docker-compose.yml -f docker-compose.build.yml exec -T relay test -f /data/initial-credentials.txt
           docker compose -f docker-compose.yml -f docker-compose.build.yml exec -T relay grep -Eq '^username=[A-Za-z0-9]{8}$' /data/initial-credentials.txt
