@@ -6,7 +6,7 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "build": "pnpm exec tsc -b packages/protocol apps/server && pnpm --filter @voice-relay/web build",
+    "build": "pnpm --filter @voice-relay/protocol build && pnpm --filter @voice-relay/server build && pnpm --filter @voice-relay/web build",
     "typecheck": "pnpm exec tsc -b packages/protocol apps/server --pretty false && pnpm --filter @voice-relay/web typecheck",
     "lint": "pnpm -r --sort lint",
     "test": "pnpm -r --sort test",
