@@ -16,7 +16,13 @@ COPY packages packages
 COPY apps/server apps/server
 COPY apps/web apps/web
 RUN pnpm build \
-    && pnpm --filter @voice-relay/server deploy --prod --legacy /prod/server
+    && pnpm --filter @voice-relay/server deploy --prod --legacy /prod/server \
+    && mkdir -p /prod/server/dist \
+    && cp -R apps/server/dist/. /prod/server/dist/ \
+    && rm -rf /prod/server/node_modules/@voice-relay/protocol \
+    && mkdir -p /prod/server/node_modules/@voice-relay/protocol/dist \
+    && cp packages/protocol/package.json /prod/server/node_modules/@voice-relay/protocol/package.json \
+    && cp -R packages/protocol/dist/. /prod/server/node_modules/@voice-relay/protocol/dist/
 
 FROM node:24-bookworm-slim AS runtime
 RUN apt-get update \
