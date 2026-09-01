@@ -6,8 +6,8 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "build": "pnpm --filter @voice-relay/protocol build && pnpm -r --sort build",
-    "typecheck": "pnpm --filter @voice-relay/protocol build && pnpm -r --sort typecheck",
+    "build": "pnpm --filter @voice-relay/protocol build && pnpm --filter @voice-relay/server build && pnpm --filter @voice-relay/web build",
+    "typecheck": "pnpm --filter @voice-relay/protocol build && pnpm --filter @voice-relay/server typecheck && pnpm --filter @voice-relay/web typecheck",
     "lint": "pnpm -r --sort lint",
     "test": "pnpm -r --sort test",
     "dev": "pnpm --filter @voice-relay/server dev",
