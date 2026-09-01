@@ -1,8 +1,18 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { fileURLToPath } from "node:url";
+
+const protocolSource = fileURLToPath(new URL("../../packages/protocol/src/index.ts", import.meta.url));
 
 export default defineConfig({
+  resolve: {
+    // Bundle the shared protocol source directly so a clean Docker checkout
+    // does not depend on a pre-existing package dist/ directory.
+    alias: {
+      "@voice-relay/protocol": protocolSource,
+    },
+  },
   build: {
     rollupOptions: {
       output: {
