@@ -14,6 +14,7 @@ internal sealed class ClipboardInjector
     private const ushort VirtualKeyLeftWindows = 0x5B;
     private const ushort VirtualKeyRightWindows = 0x5C;
     private const ushort VirtualKeyV = 0x56;
+    private const ushort VirtualKeyReturn = 0x0D;
     private const uint DesktopSwitchDesktop = 0x0100;
     private const uint ProcessQueryLimitedInformation = 0x1000;
     private const uint TokenQuery = 0x0008;
@@ -27,7 +28,7 @@ internal sealed class ClipboardInjector
         _dispatcher = dispatcher;
     }
 
-    public async Task<InjectionResult> PasteAsync(string text, CancellationToken cancellationToken)
+    public async Task<InjectionResult> PasteAsync(string text, bool submitWithEnter, CancellationToken cancellationToken)
     {
         if (!IsInteractiveDesktopAvailable()) return new InjectionResult("desktop_locked");
         var foreground = GetForegroundWindow();
@@ -53,18 +54,34 @@ internal sealed class ClipboardInjector
         if (GetForegroundWindow() != foreground) return new InjectionResult("focus_changed");
         if (IsModifierPressed()) return new InjectionResult("modifier_pressed");
 
-        var inputs = new[]
+        var pasteInputs = new[]
         {
             KeyboardInput(VirtualKeyControl, 0),
             KeyboardInput(VirtualKeyV, 0),
             KeyboardInput(VirtualKeyV, KeyEventKeyUp),
             KeyboardInput(VirtualKeyControl, KeyEventKeyUp),
         };
-        var sent = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
-        if (sent != (uint)inputs.Length)
+        var sentPaste = SendInput((uint)pasteInputs.Length, pasteInputs, Marshal.SizeOf<INPUT>());
+        if (sentPaste != (uint)pasteInputs.Length)
         {
             var error = Marshal.GetLastWin32Error();
             return new InjectionResult("input_failed", error == 0 ? null : new Win32Exception(error).Message);
+        }
+        if (submitWithEnter)
+        {
+            if (GetForegroundWindow() != foreground) return new InjectionResult("focus_changed");
+            if (IsModifierPressed()) return new InjectionResult("modifier_pressed");
+            var enterInputs = new[]
+            {
+                KeyboardInput(VirtualKeyReturn, 0),
+                KeyboardInput(VirtualKeyReturn, KeyEventKeyUp),
+            };
+            var sentEnter = SendInput((uint)enterInputs.Length, enterInputs, Marshal.SizeOf<INPUT>());
+            if (sentEnter != (uint)enterInputs.Length)
+            {
+                var error = Marshal.GetLastWin32Error();
+                return new InjectionResult("input_failed", error == 0 ? null : new Win32Exception(error).Message);
+            }
         }
         return new InjectionResult("injected");
     }
@@ -202,3 +219,4 @@ internal sealed class ClipboardInjector
     [DllImport("advapi32.dll")] private static extern IntPtr GetSidSubAuthorityCount(IntPtr sid);
     [DllImport("advapi32.dll")] private static extern IntPtr GetSidSubAuthority(IntPtr sid, uint subAuthority);
 }
+
