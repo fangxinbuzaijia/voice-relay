@@ -32,10 +32,12 @@ internal sealed record EncryptedPayload(
     [property: JsonPropertyName("v")] int Version,
     [property: JsonPropertyName("messageId")] string? MessageId,
     [property: JsonPropertyName("sentAt")] long SentAt,
-    [property: JsonPropertyName("text")] string? Text);
+    [property: JsonPropertyName("text")] string? Text,
+    [property: JsonPropertyName("submitWithEnter")] bool SubmitWithEnter = false);
 
 internal sealed record DuplicateEntry(
     [property: JsonPropertyName("messageId")] string MessageId,
     [property: JsonPropertyName("processedAt")] long ProcessedAt);
 
 internal sealed record InjectionResult(string Status, string? Detail = null);
+
