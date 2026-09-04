@@ -111,6 +111,9 @@ export const encryptedPayloadSchema = z.object({
   messageId: z.uuid(),
   sentAt: z.number().int(),
   text: z.string().max(MAX_TEXT_CODE_UNITS),
+  // Optional for backwards compatibility with messages created before the
+  // auto-submit option existed. Missing means “paste only”.
+  submitWithEnter: z.boolean().optional().default(false),
 });
 export type EncryptedPayload = z.infer<typeof encryptedPayloadSchema>;
 
@@ -121,3 +124,4 @@ export function countUtf16CodeUnits(text: string): number {
 export function parseClientFrame(value: unknown): ClientFrame {
   return clientFrameSchema.parse(value);
 }
+
