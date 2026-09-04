@@ -108,6 +108,7 @@ export default function App() {
   const [devices, setDevices] = useState<DevicePresence[]>([]);
   const [selectedId, setSelectedId] = useState<string | undefined>(() => loadSelectedDevice());
   const [draft, setDraft] = useState(loadDraft);
+  const [submitWithEnter, setSubmitWithEnter] = useState(() => localStorage.getItem("voice-relay:submit-with-enter") === "true");
   const [sendState, setSendState] = useState<SendState>({ kind: "idle", text: "等待输入" });
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -241,6 +242,11 @@ export default function App() {
     saveDraft(text);
   };
 
+  const updateSubmitWithEnter = (enabled: boolean): void => {
+    setSubmitWithEnter(enabled);
+    localStorage.setItem("voice-relay:submit-with-enter", String(enabled));
+  };
+
   const sendText = async (): Promise<void> => {
     const target = selectedDevice;
     if (!target || !target.online || target.paused || connection !== "online") return;
@@ -256,7 +262,7 @@ export default function App() {
       }
       const messageId = crypto.randomUUID();
       const sentAt = Date.now();
-      const ciphertext = await encryptTextForDevice(target, draft, messageId, sentAt);
+      const ciphertext = await encryptTextForDevice(target, draft, messageId, sentAt, submitWithEnter);
       pendingRef.current = { messageId, text: draft, targetName: target.name, sentAt };
       clearPendingTimeout();
       pendingTimeoutRef.current = window.setTimeout(() => {
@@ -346,6 +352,17 @@ export default function App() {
               aria-label="要发送的文字"
               maxLength={MAX_TEXT_CODE_UNITS + 1}
             />
+            <label className="submit-option">
+              <input
+                type="checkbox"
+                checked={submitWithEnter}
+                onChange={(event) => updateSubmitWithEnter(event.target.checked)}
+              />
+              <span>
+                <strong>发送后按一次回车</strong>
+                <small>适合需要提交的输入框</small>
+              </span>
+            </label>
             <div className={`send-status ${sendState.kind}`} role="status">
               {sendState.kind === "success" ? <CheckCircle2 size={18} /> : sendState.kind === "warning" || sendState.kind === "error" ? <AlertTriangle size={18} /> : <Clock3 size={18} />}
               <span>{sendState.text}</span>
@@ -672,3 +689,4 @@ function HistoryDrawer({ open, entries, onClose, onReuse, onDelete, onClear }: {
     </div>
   );
 }
+
