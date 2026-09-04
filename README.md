@@ -29,7 +29,7 @@ docker compose up -d
 docker compose exec relay cat /data/initial-credentials.txt
 ```
 
-Compose 默认只把服务映射到宿主机的 `127.0.0.1:3100`，不会监听 80/443。首次启动会自动生成：
+Compose 会从公开 GitHub 源码自动构建本地镜像，不需要登录 GHCR。默认只把服务映射到宿主机的 `127.0.0.1:3100`，不会监听 80/443。首次启动会自动生成：
 
 - `/data/master.key`：32 字节服务端主密钥。
 - 唯一账户：用户名和密码均为 8 位随机字母数字。
@@ -80,11 +80,10 @@ docker compose exec relay node apps/server/dist/cli/reset-user.js
 
 ## 更新与备份
 
-更新公开镜像：
+更新到 GitHub 上的最新版本：
 
 ```bash
-docker compose pull
-docker compose up -d
+docker compose up -d --build
 ```
 
 备份前先停止服务，然后整体备份项目的 `data` 目录。数据库、WAL 文件和 `master.key` 必须一起保存；主密钥丢失后无法读取已有 TOTP 秘钥。
