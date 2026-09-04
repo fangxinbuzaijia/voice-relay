@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, type DevicePresence, type EncryptedPayload } from "@voice-relay/protocol";
+import { PROTOCOL_VERSION, type DevicePresence } from "@voice-relay/protocol";
 import sodium from "libsodium-wrappers";
 
 export async function fingerprintPublicKey(publicKeyBase64: string): Promise<string> {
@@ -16,12 +16,20 @@ export async function encryptTextForDevice(
   text: string,
   messageId: string,
   sentAt: number,
+  submitWithEnter = false,
 ): Promise<string> {
   await sodium.ready;
-  const payload: EncryptedPayload = { v: PROTOCOL_VERSION, messageId, sentAt, text };
+  const payload = {
+    v: PROTOCOL_VERSION,
+    messageId,
+    sentAt,
+    text,
+    ...(submitWithEnter ? { submitWithEnter: true } : {}),
+  };
   const bytes = new TextEncoder().encode(JSON.stringify(payload));
   const publicKey = sodium.from_base64(device.publicKey, sodium.base64_variants.ORIGINAL);
   if (publicKey.length !== 32) throw new Error("invalid_device_key");
   const ciphertext = sodium.crypto_box_seal(bytes, publicKey);
   return sodium.to_base64(ciphertext, sodium.base64_variants.ORIGINAL);
 }
+
