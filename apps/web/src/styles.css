@@ -86,6 +86,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .count.over { color: var(--danger); font-weight: 700; }
 .editor-panel textarea { display: block; width: 100%; min-height: clamp(290px, 48vh, 540px); padding: 20px; resize: vertical; border: 0; outline: 0; color: var(--pine); background: transparent; font-size: 18px; line-height: 1.8; }
 .editor-panel textarea::placeholder { color: #9aa7a1; }
+.submit-option { display: flex; align-items: flex-start; gap: 10px; margin: 0 16px 12px; padding: 11px 12px; border: 1px solid #d7e4dd; border-radius: 13px; color: var(--pine); background: #f7faf8; cursor: pointer; }
+.submit-option input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--pine); }
+.submit-option span { display: grid; gap: 2px; }
+.submit-option strong { font-size: 13px; }
+.submit-option small { color: var(--muted); font-size: 11px; }
 .send-status { min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid #e7efeb; color: var(--muted); font-size: 12px; }
 .send-status.idle { background: #f8fbfa; }
 .send-status.sending { color: #7a5b42; background: var(--apricot-soft); }
@@ -245,3 +250,4 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
