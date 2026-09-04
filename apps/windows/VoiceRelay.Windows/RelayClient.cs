@@ -186,7 +186,7 @@ internal sealed class RelayClient : IAsyncDisposable
             return;
         }
 
-        var result = await _injector.PasteAsync(payload.Text, cancellationToken);
+        var result = await _injector.PasteAsync(payload.Text, payload.SubmitWithEnter, cancellationToken);
         if (result.Status == "injected") _duplicates.Add(messageId);
         await SendAckAsync(messageId, result.Status, result.Detail, cancellationToken);
         DeliveryReported?.Invoke(result.Status == "injected" ? "文字已粘贴" : $"粘贴失败：{result.Status}");
@@ -252,3 +252,4 @@ internal sealed class RelayClient : IAsyncDisposable
         }
     }
 }
+
