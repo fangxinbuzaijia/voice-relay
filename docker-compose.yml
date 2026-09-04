@@ -1,6 +1,11 @@
 services:
   relay:
-    image: ghcr.io/fangxinbuzaijia/voice-relay:latest
+    # Build directly from the public GitHub source so this one-file deployment
+    # does not depend on a pre-published GHCR package or registry login.
+    image: voice-relay:local
+    build:
+      context: https://github.com/fangxinbuzaijia/voice-relay.git#main
+    pull_policy: build
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -20,3 +25,4 @@ services:
 
 volumes:
   relay-data:
+
