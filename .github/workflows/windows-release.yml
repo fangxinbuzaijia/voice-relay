@@ -1,0 +1,112 @@
+name: Windows Download Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/windows-version.txt
+      - .github/workflows/windows-release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-download-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - name: Read release version
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Get-Content -Raw .github/windows-version.txt).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Expected a three-part Windows version' }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "RELEASE_VERSION=$version" >> $env:GITHUB_ENV
+      - name: Test Windows client
+        run: dotnet test apps/windows/VoiceRelay.Windows.Tests/VoiceRelay.Windows.Tests.csproj -c Release
+      - name: Build standalone EXE and portable ZIP
+        shell: pwsh
+        run: |
+          dotnet publish apps/windows/VoiceRelay.Windows/VoiceRelay.Windows.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:Version=$env:RELEASE_VERSION -p:FileVersion="$env:RELEASE_VERSION.0" `
+            -o artifacts/windows
+          if ($LASTEXITCODE -ne 0) { throw 'Windows publish failed' }
+          $files = @(Get-ChildItem -LiteralPath artifacts/windows -File)
+          if ($files.Count -ne 1 -or $files[0].Name -ne 'VoiceRelay.exe') {
+            throw 'Expected a single standalone VoiceRelay.exe'
+          }
+          New-Item -ItemType Directory -Force artifacts/release | Out-Null
+          Copy-Item artifacts/windows/VoiceRelay.exe artifacts/release/VoiceRelay.exe
+          Compress-Archive -LiteralPath artifacts/windows/VoiceRelay.exe `
+            -DestinationPath "artifacts/release/VoiceRelay-$env:RELEASE_VERSION-win-x64-portable.zip"
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path -LiteralPath $iscc)) {
+            choco install innosetup --no-progress -y
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
+          }
+          & $iscc "/DMyAppVersion=$env:RELEASE_VERSION" 'installer\VoiceRelay.iss'
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+          Copy-Item artifacts/installer/*.exe artifacts/release/
+      - name: Verify files and generate checksums
+        shell: pwsh
+        run: |
+          $expected = @('VoiceRelay.exe', "VoiceRelay-$env:RELEASE_VERSION-win-x64-portable.zip", "VoiceRelay-Setup-$env:RELEASE_VERSION-win-x64.exe")
+          foreach ($name in $expected) {
+            $file = Get-Item -LiteralPath "artifacts/release/$name"
+            if ($file.Length -lt 1MB) { throw "Unexpectedly small release file: $name" }
+          }
+          Get-ChildItem artifacts/release -File | Sort-Object Name | ForEach-Object {
+            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant()
+            "$hash *$($_.Name)"
+          } | Set-Content -Encoding ascii artifacts/release/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-downloads
+          path: artifacts/release/*
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: windows-downloads
+          path: release-files
+      - name: Publish downloadable Windows release
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v$RELEASE_VERSION"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists. Bump .github/windows-version.txt for a new release."
+            exit 1
+          fi
+          gh release create "$tag" release-files/* \
+            --target "$GITHUB_SHA" \
+            --title "Voice Relay $tag - Windows 客户端" \
+            --notes "Windows 10/11 x64 客户端，内置运行环境。推荐下载 Setup 安装包；VoiceRelay.exe 可直接运行，portable.zip 为压缩便携版。支持系统托盘、开机自启动、剪贴板粘贴及可选自动回车。SHA256SUMS.txt 提供文件校验值。" \
+            --draft
+          gh release edit "$tag" --draft=false --latest
+          gh release view "$tag" --json url,assets
