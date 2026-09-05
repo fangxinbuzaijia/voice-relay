@@ -14,7 +14,7 @@ Voice Relay sends text produced by your phone's system voice keyboard to a selec
 - Multiple Windows devices with online, offline, and paused presence.
 - Curve25519 sealed-box encryption for every message; the server stores no messages.
 - Per-user Windows tray app with optional startup-at-login.
-- Preserves Unicode plain text, including emoji, tabs, and line breaks; it never presses Enter.
+- Preserves Unicode plain text, including emoji, tabs, and line breaks; an optional mobile checkbox sends one Enter after pasting (off by default).
 - Single-account self-hosting with optional standards-based TOTP.
 - The application only exposes an internal HTTP port and does not manage ports 80/443, TLS certificates, or your reverse proxy.
 
@@ -35,7 +35,7 @@ Your proxy must forward `/`, `/api/v1/*`, `/ws`, and the health endpoints to `12
 
 ## Windows client
 
-Download the x64 installer or portable ZIP from [GitHub Releases](https://github.com/fangxinbuzaijia/voice-relay/releases). Closing its window keeps it in the notification area; use the tray menu to pause, configure startup, or exit.
+Download the x64 installer, standalone EXE, or portable ZIP from the [latest release](https://github.com/fangxinbuzaijia/voice-relay/releases/latest). You can also [download VoiceRelay.exe directly](https://github.com/fangxinbuzaijia/voice-relay/releases/latest/download/VoiceRelay.exe). All packages include the .NET runtime; SHA256SUMS.txt contains file checksums. Closing the window keeps the client in the notification area; use the tray menu to pause, configure startup, or exit.
 
 ## Update
 
@@ -56,9 +56,8 @@ pnpm build
 docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
-The Windows client requires the .NET 10 SDK. Version tags matching `v*` publish multi-architecture images to GHCR and attach the Windows installer and portable ZIP to a GitHub Release.
+Building the Windows client requires the .NET 10 SDK. Maintainers publish a new Windows version by bumping `.github/windows-version.txt` on `main`. The Windows Download Release workflow builds, tests, and publishes the download assets independently of Docker; each release needs a new version number. The existing `v*` tag workflow remains available for full releases.
 
 ## License
 
 [MIT](LICENSE)
-
