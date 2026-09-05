@@ -14,7 +14,7 @@
 - 支持区分多台 Windows 电脑，并显示在线、离线和暂停状态。
 - 消息使用目标电脑的 Curve25519 公钥加密；服务端不保存消息。
 - Windows 客户端常驻托盘，关闭窗口不会退出，支持开机自动启动。
-- 完整保留 Unicode 纯文本，包括中文、表情、换行和制表符，不自动按回车。
+- 完整保留 Unicode 纯文本，包括中文、表情、换行和制表符；默认不按回车，可在手机端勾选“发送后按一次回车”。
 - 单账户、自托管、二步验证可选，兼容 Google Authenticator、Microsoft Authenticator 和 Bitwarden。
 - 服务只提供内部 HTTP 端口，不占用或配置 80/443、证书和反向代理。
 
@@ -49,10 +49,12 @@ BIND_ADDRESS=0.0.0.0 APP_PORT=3100 docker compose up -d
 
 ## 安装 Windows 客户端
 
-打开仓库的 [Releases](https://github.com/fangxinbuzaijia/voice-relay/releases)，下载：
+打开 [最新 Windows 客户端下载页](https://github.com/fangxinbuzaijia/voice-relay/releases/latest)，在 Assets 中下载。所有版本均内置运行环境，无需另装 .NET：
 
 - `VoiceRelay-Setup-版本-win-x64.exe`：推荐的按用户安装程序。
+- [VoiceRelay.exe（直接下载）](https://github.com/fangxinbuzaijia/voice-relay/releases/latest/download/VoiceRelay.exe)：无需安装，双击运行。
 - `VoiceRelay-版本-win-x64-portable.zip`：免安装便携版。
+- `SHA256SUMS.txt`：下载文件的 SHA-256 校验值。
 
 客户端首次启动时填写服务器域名/IP、端口、HTTPS 开关和电脑名称，然后使用服务端账户登录。只有账户已经启用二步验证时才需要填写动态码。
 
@@ -109,7 +111,7 @@ dotnet publish apps/windows/VoiceRelay.Windows/VoiceRelay.Windows.csproj `
   -c Release -r win-x64 --self-contained true -o artifacts/windows
 ```
 
-项目使用 GitHub Actions 持续验证 Web、服务端、Docker 和 Windows 客户端。推送 `v*` 标签时会自动发布多架构 GHCR 镜像、Windows 安装程序和便携版。
+项目使用 GitHub Actions 持续验证 Web、服务端、Docker 和 Windows 客户端。维护者更新 `.github/windows-version.txt` 并推送到 `main` 后，Windows Download Release 工作流会独立构建、测试并发布 Windows 下载附件；每次发布须使用新的版本号。该流程不依赖 Docker 镜像发布。原有 `v*` 标签发布工作流仍可用于完整发布。
 
 ## 安全边界
 
@@ -124,4 +126,3 @@ dotnet publish apps/windows/VoiceRelay.Windows/VoiceRelay.Windows.csproj `
 ## 许可证
 
 [MIT](LICENSE)
-
